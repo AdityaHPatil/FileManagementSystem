@@ -65,4 +65,28 @@ public class FolderItem extends FileSystemItem{
         });
     }
 
+    @Override 
+    public FolderItem copyTo(Path targetFolder) throws IOException{
+        Path target = resolveUniqueTarget(targetFolder.toAbsolutePath());
+        if(target.startsWith(path)){
+            throw new IOException("Cannot copy a folder into itself!");
+        }
+
+        Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
+            @Override 
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attr) throws IOException{
+                Files.createDirectories(target.resolve(path.relativize(dir)));
+                return FileVisitResult.CONTINUE;
+            }
+            
+            @Override 
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attr) throws IOException{
+                Files.copy(file, target.resolve(path.relativize(file)));
+                return FileVisitResult.CONTINUE;
+            }
+        });
+
+        return new FolderItem(target);
+    }
+
 }

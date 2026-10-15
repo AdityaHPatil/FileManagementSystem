@@ -18,4 +18,16 @@ public class FileItem extends FileSystemItem{
     Desktop.getDesktop().open(path.toFile());
   }
 
+  @Override 
+  public FileItem copyTo(Path targetFolder) throws IOException{
+    Path target = resolveUniqueTarget(targetFolder);
+    Files.copy(path, target);
+    return new FileItem(target);
+  }
+
+  //We need to write a function to reveal a file or folder in the explorer but for that I think some of the GUI
+  //needs to be built first
+
+  
+
 }

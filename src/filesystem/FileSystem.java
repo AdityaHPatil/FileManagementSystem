@@ -1,7 +1,8 @@
 package filesystem;
 
 import java.io.IOException;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 
@@ -105,41 +106,4 @@ public class FileSystem implements FileManagerService{
         }
         return results;
     }
-
-    @Override
-    public FileSystemItem duplicate(FileSystemItem item) throws IOException {
-        Path parent = item.getPath().getParent();
-        if (parent == null) {
-            throw new IOException("Cannot duplicate root item");
-        }
-        return item.copyTo(parent);
-    }
-
-    @Override
-    public ArrayList<FileSystemItem> search(String query) throws IOException {
-        ArrayList<FileSystemItem> matches = new ArrayList<>();
-        if (workspace == null) {
-            return matches;
-        }
-        String lowerQuery = query.toLowerCase();
-        Files.walkFileTree(workspace.getPath(), new SimpleFileVisitor<Path>() {
-            @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
-                if (file.getFileName().toString().toLowerCase().contains(lowerQuery)) {
-                    matches.add(new FileItem(file));
-                }
-                return FileVisitResult.CONTINUE;
-            }
-
-            @Override
-            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
-                if (!dir.equals(workspace.getPath()) && dir.getFileName() != null && dir.getFileName().toString().toLowerCase().contains(lowerQuery)) {
-                    matches.add(new FolderItem(dir));
-                }
-                return FileVisitResult.CONTINUE;
-            }
-        });
-        return matches;
-    }
 }
-

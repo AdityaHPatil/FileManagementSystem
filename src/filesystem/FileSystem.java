@@ -4,7 +4,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.FileVisitResult;
+import java.nio.file.SimpleFileVisitor;
 import java.util.ArrayList;
+
 
 import models.*;
 
@@ -105,5 +108,60 @@ public class FileSystem implements FileManagerService{
             clipboard.clear();
         }
         return results;
+    }
+
+    @Override 
+    public FileSystemItem duplicate(FileSystemItem item) throws IOException{
+        Path parent = item.getPath().toAbsolutePath().getParent();
+        if(parent == null){
+            throw new IOException("Cannot Duplicate, Item has no parent Folder!");
+        }
+        
+        return item.copyTo(parent);
+    }
+
+    @Override 
+    public ArrayList<FileSystemItem> search(String query) throws IOException{
+        if(workspace == null){
+            throw new IllegalStateException("No Workspace is Open");
+        }
+
+        ArrayList<FileSystemItem> results = new ArrayList<>();
+        if(query == null || query.isBlank()){
+            return results;
+        }
+
+        String needle = query.trim().toLowerCase();
+        Path root = workspace.getPath();
+
+        Files.walkFileTree(root, new SimpleFileVisitor<Path>(){
+            @Override 
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attr){
+                if(!dir.equals(root) && matches(dir, needle)){
+                    results.add(new FolderItem(dir));
+                }
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override 
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attr){
+                if(matches(file, needle)){
+                    results.add(new FileItem(file));
+                }
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override 
+            public FileVisitResult visitFileFailed(Path file, IOException e){
+                return FileVisitResult.CONTINUE;
+            }
+        });
+
+        return results;
+    }
+
+    private static boolean matches(Path p, String needle){
+        Path name = p.getFileName();
+        return name != null && name.toString().toLowerCase().contains(needle);
     }
 }

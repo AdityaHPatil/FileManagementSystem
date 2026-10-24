@@ -1,0 +1,7 @@
+{
+  "java.project.sourcePaths": ["src"],
+  "java.project.outputPath": "out",
+  "java.project.referencedLibraries": [
+    "C:/Users/Ishaan/Downloads/javafx-27_windows-x64_bin-sdk/javafx-sdk-27.0.1/lib/*.jar"
+  ]
+}

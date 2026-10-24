@@ -2,9 +2,13 @@ package filesystem;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.Locale;
+import java.util.stream.Stream;
 
 import models.*;
 
@@ -14,9 +18,7 @@ public class FileSystem implements FileManagerService{
     private final ArrayList<FileSystemItem> clipboard = new ArrayList<>();
     private ClipboardMode clipboardMode;
 
-    
-
-    @Override 
+    @Override
     public FolderItem openWorkspace(Path rootFolder) throws IOException{
         if(!Files.isDirectory(rootFolder)){
             throw new IOException("Not a valid Folder: " + rootFolder);
@@ -105,5 +107,61 @@ public class FileSystem implements FileManagerService{
             clipboard.clear();
         }
         return results;
+    }
+
+    @Override
+    public FileSystemItem duplicate(FileSystemItem item) throws IOException{
+        Path parent= item.getPath().getParent();
+        if (parent==null){
+            throw new IOException("Cannot duplicate an item without a parent folder.");
+        }
+        return item.copyTo(parent);
+    }
+
+
+    @Override
+    public ArrayList<FileSystemItem> search(String query) throws IOException{
+        if (workspace==null){
+            throw new IllegalStateException("Workspace is not opened. Please open a workspace first.");
+        }
+
+        if (query == null || query.isBlank()) {
+            throw new IllegalArgumentException("Search query must not be empty.");
+        }
+
+        ArrayList<FileSystemItem> results = new ArrayList<>();
+        String searchQuery = query.toLowerCase(Locale.ROOT);
+
+        Path workspacePath = workspace.getPath();
+
+        try (Stream<Path> pathStream =Files.walk(workspacePath)) {
+
+            Iterator<Path> iterator = pathStream.iterator();
+
+            while (iterator.hasNext()){
+                Path currentPath=iterator.next();
+
+                Path fileNamePath=currentPath.getFileName();
+
+                String nameText=fileNamePath.toString();
+
+                String nameTextLower=nameText.toLowerCase(Locale.ROOT);
+
+                if (nameTextLower.contains(searchQuery)) {
+                    if (Files.isDirectory(currentPath, LinkOption.NOFOLLOW_LINKS)) {
+                        FolderItem folderResult=new FolderItem(currentPath);
+
+                        results.add(folderResult);
+                    } else {
+                        FileItem fileResult=new FileItem(currentPath);
+
+                        results.add(fileResult);
+                    }
+                }
+            }
+        }
+
+        return results;
+
     }
 }
